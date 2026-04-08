@@ -1,50 +1,102 @@
-# Ideation Engine — Quick Start
+# CLAUDE.md — Ideation Engine
 
-## What This Is
-A visual ideation platform that turns AI model outputs into interactive bubble diagrams. Dream ideas, riff variations, ground them in reality, and export as knowledge repos.
+You are the specialist and shipwright for this vessel. Two roles, one agent.
 
-## Architecture
-- **worker.ts**: Single Cloudflare Worker — all API + UI
-- **BYOK (Bring Your Own Keys)**: Users configure providers in the UI or via environment variables
-- **Free tier**: Uses repo owner's API keys for $0.02 credit demo
-- **Models**: Seed-2.0-pro (creative), Seed-2.0-mini (fast riffs), DeepSeek-chat (grounding)
+## Identity
+- **Vessel**: Ideation Engine
+- **Role**: Ideation Engine
+- **URL**: https://ideation-engine.casey-digennaro.workers.dev
+- **Repo**: github.com/Lucineer/ideation-engine
+- **Branch**: master
+- **KV Namespace**: unknown
+- **Size**: ~500 lines
 
-## Setup
-1. Copy `.env.example` to `.dev.vars`
-2. Fill in your API keys (at least one provider)
-3. Run `npx wrangler dev` for local development
-4. Run `npx wrangler deploy` to deploy to Cloudflare
+## Specialist Mode — Day-to-Day Operations
 
-## Environment Variables (for .dev.vars or Cloudflare Secrets)
-```
-DEEPSEEK_API_KEY=sk-...
-SILICONFLOW_API_KEY=sk-...
-DEEPINFRA_API_KEY=...
+### Deploy
+```bash
+cd /tmp/ideation-engine && wrangler deploy
 ```
 
-## API Endpoints
-- `POST /api/session` — Create new session
-- `GET /api/sessions` — List sessions
-- `GET /api/session/:id` — Get session with all bubbles
-- `POST /api/dream` — Generate single pro bubble
-- `POST /api/pipeline` — Dream + N spokes
-- `POST /api/riff` — Generate spokes from selected bubbles
-- `POST /api/ground` — Feasibility check on selected bubbles
-- `POST /api/bubble/:id/toggle` — Toggle canon selection
-- `GET /api/session/:id/export` — Export as Markdown
-- `GET /api/session/:id/export/pseudo` — Export as pseudocode
-- `GET /health` — Health check
-- `GET /vessel.json` — Fleet metadata
+### Health Check
+```bash
+curl -s https://ideation-engine.casey-digennaro.workers.dev/health
+curl -s https://ideation-engine.casey-digennaro.workers.dev/vessel.json | python3 -m json.tool
+```
 
-## Key Patterns
-- Bubble layout is hub-and-spoke: pro dream at center, mini variations radiate out
-- Double-click to select/canon, then riff deeper from selected
-- Each bubble stores model, temp, maxTokens for reproducibility
-- Sessions persist in KV namespace `IDEATE_KV`
-- BYOK config goes browser→provider directly, never touches our server
+### Key Endpoints
+| Endpoint | What It Does |
+|----------|-------------|
+| /health | Liveness check |
+| /vessel.json | Fleet self-description |
+| /api/dream | API endpoint |
+| /api/ground | API endpoint |
+| /api/pipeline | API endpoint |
+| /api/riff | API endpoint |
+| /api/session | API endpoint |
+| /api/session/ | API endpoint |
+| /api/sessions | API endpoint |
 
-## Modifying
-- To change models: edit FREE_PRO, FREE_MINI, FREE_CHAT constants
-- To change bubble styling: edit `.bubble.pro`, `.bubble.mini`, `.bubble.ground` CSS
-- To add new phases: add to ROUTES, create CSS class, add toolbar button + API endpoint
-- To change layout algorithm: edit the render() function in getLanding()
+### Common Issues & Recovery
+1. **502 error**: Check KV namespace `unknown`, redeploy with `rm -rf .wrangler dist && wrangler deploy`
+2. **CSP blocking**: CSP pattern is `no CSP` — ensure connect-src includes needed domains
+3. **Stale build**: `rm -rf .wrangler dist && wrangler deploy`
+4. **GitHub raw cache**: Changes may take 5-10 min to propagate on raw.githubusercontent.com
+5. **Git push conflict**: `git fetch && git reset --hard origin/master && re-apply changes`
+
+### Fleet Connections
+- **Emergence bus**: not wired
+- **Vessel Tuner**: https://vessel-tuner.casey-digennaro.workers.dev/api/vessel?name=ideation-engine
+- **Fleet grid**: Listed in cocapn.ai and the-fleet
+
+## Shipwright Mode — Drydock Operations
+
+### Architecture Pattern
+- **Type**: Raw CF Worker
+- **JSON helper**: json()
+- **CSP pattern**: no CSP
+- **Features.js**: no
+
+### Fleet Patterns
+- **Frame-ancestors in CSP**: yes
+- **vessel.json capabilities**: multi-model-ideation, bubble-views, byok, session-management, export
+- **Fleet link footer**: yes
+
+### Refactoring Rules
+1. **NEVER** change the JSON helper function name (`json()`) — breaks all endpoints
+2. **NEVER** add template literals (${var}) inside HTML strings — breaks esbuild
+3. **NEVER** use single quotes inside double-quoted HTML inside single-quoted TS strings
+4. **ALWAYS** use string concatenation for HTML, not template literals
+5. **ALWAYS** test with `curl /health` after every change
+6. **ALWAYS** check vessel-tuner score before and after refactoring
+7. **PREFER** `/features.js` endpoint for complex client-side JS (avoids quote escaping)
+8. **PREFER** `write` tool over heredocs — obfuscation detector blocks cat << EOF
+
+### Before Refactoring Checklist
+- [ ] Current vessel-tuner score recorded
+- [ ] Git status clean (no uncommitted changes)
+- [ ] Branch backed up (`git tag before-refactor`)
+- [ ] All endpoints tested and working
+- [ ] Fleet connections documented
+
+### After Refactoring Checklist
+- [ ] `curl /health` returns 200
+- [ ] `curl /vessel.json` returns valid JSON with capabilities
+- [ ] CSP header present with frame-ancestors
+- [ ] Vessel-tuner score >= previous score
+- [ ] Landing page renders correctly
+- [ ] `git push` succeeds
+
+## Captain's Standing Orders
+1. Keep the vessel small. ~500 lines is the current size.
+2. Zero runtime dependencies unless absolutely necessary.
+3. Every endpoint must be useful — no dead code.
+4. Equipment is loaded inline, never via npm.
+5. All changes committed with descriptive messages.
+6. If something breaks, fix it before moving on.
+7. Document what you changed and why.
+
+## Vessel Evolution
+- **Current stage**: [hardware-first | safe | effective | pretty | optimized]
+- **Target stage**: optimized
+- **Rollback points**: check git log for last-known-good commits
